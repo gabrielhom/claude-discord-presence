@@ -4,12 +4,7 @@
 
 Discord Rich Presence for the [Claude Code](https://claude.com/claude-code) CLI. Shows what you're working on, live.
 
-```
-Playing Vibe Coding
-📁 my-project (main)
-✏️ server.ts
-01:23:45 elapsed
-```
+<img src="docs/card.png" alt="Discord profile card: Vibe Coding — 📁 claude-discord-presence (main) — 💤 Waiting for input — 1:12:24" width="536">
 
 - **Zero dependencies** — talks Discord IPC directly.
 - **Works on WSL2** — Discord runs on Windows behind a named pipe that Linux processes can't see; this detects WSL and runs the tiny daemon with Windows `node.exe` instead. Also works natively on Linux (incl. Flatpak/Snap Discord), macOS and Windows.
