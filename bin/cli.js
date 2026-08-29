@@ -17,7 +17,7 @@ const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop', 'Sessi
 const DEFAULT_CLIENT_ID = '1543326727135305778';
 
 const readJson = (p, fb) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return fb; } };
-const cfg = () => ({ showPrompt: true, largeImage: 'claude-logo', ...readJson(CONFIG, {}) });
+const cfg = () => ({ showPrompt: true, largeImage: '', ...readJson(CONFIG, {}) }); // no largeImage → Discord shows the app icon
 const clientId = () => process.env.CLAUDE_PRESENCE_CLIENT_ID || cfg().clientId || DEFAULT_CLIENT_ID;
 const stateFile = (sid) => path.join(STATE_DIR, `${sid}.json`);
 const alive = (pid) => { try { return pid > 0 && process.kill(pid, 0); } catch (e) { return e.code === 'EPERM'; } };

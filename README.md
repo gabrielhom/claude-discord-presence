@@ -36,13 +36,13 @@ claude-discord-presence uninstall  # removes hooks, stops daemons
 {
   "clientId": "your-discord-application-id",
   "showPrompt": false,
-  "largeImage": "claude-logo"
+  "largeImage": "my-art-asset-key"
 }
 ```
 
 - `clientId` — use your own app from the [Developer Portal](https://discord.com/developers/applications) to control the name/icon. Env `CLAUDE_PRESENCE_CLIENT_ID` also works.
 - `showPrompt` — set `false` to show `💬 Prompting` instead of your prompt text (default `true`).
-- `largeImage` — asset key in your app's Rich Presence art. Set `""` for none.
+- `largeImage` — key of an image uploaded under your app's *Rich Presence → Art Assets*. Default: none (Discord shows the app icon).
 
 ## How it works
 
