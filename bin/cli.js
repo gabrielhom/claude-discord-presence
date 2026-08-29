@@ -41,12 +41,12 @@ function ensureDaemon() {
   let bin = process.execPath, args = [DAEMON, STATE_DIR, clientId()];
   if (isWSL()) {
     const wn = windowsNode();
-    if (!wn) { fs.appendFileSync(path.join(STATE_DIR, 'error.log'), 'WSL detected but node.exe not found on Windows\n'); return; }
+    if (!wn) { fs.appendFileSync(path.join(STATE_DIR, 'error.log'), 'WSL detected but node.exe not found on Windows\n', { mode: 0o600 }); return; }
     bin = wn; args = [toWin(DAEMON), toWin(STATE_DIR), clientId()];
   }
   const child = spawn(bin, args, { detached: true, stdio: 'ignore', windowsHide: true });
   child.unref();
-  fs.writeFileSync(PID_FILE, String(child.pid));
+  fs.writeFileSync(PID_FILE, String(child.pid), { mode: 0o600 });
 }
 
 // --- hook handling ---
@@ -56,7 +56,7 @@ function updateState(sid, patch) {
   const f = stateFile(sid);
   const st = readJson(f, null);
   if (!st) return;
-  fs.writeFileSync(f, JSON.stringify({ ...st, ...patch, updated: Date.now() }));
+  fs.writeFileSync(f, JSON.stringify({ ...st, ...patch, updated: Date.now() }), { mode: 0o600 });
 }
 
 function hook(input) {
@@ -64,7 +64,8 @@ function hook(input) {
   if (!sid) return;
   const ev = input.hook_event_name;
   if (ev === 'SessionStart') {
-    fs.mkdirSync(STATE_DIR, { recursive: true });
+    fs.mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 });
+    try { fs.chmodSync(STATE_DIR, 0o700); } catch {} // dir may predate 0.3.1
     const cwd = input.cwd || process.cwd();
     let project = path.basename(cwd), branch = '';
     try { project = path.basename(sh('git rev-parse --show-toplevel', { cwd })); branch = sh('git rev-parse --abbrev-ref HEAD', { cwd }); } catch {}
@@ -72,7 +73,7 @@ function hook(input) {
     if (!cfg().showProject) { project = 'a project'; branch = ''; }
     const prev = readJson(stateFile(sid), null); // resume/clear/compact re-fire → keep start time
     const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: cfg().largeImage };
-    fs.writeFileSync(stateFile(sid), JSON.stringify(st));
+    fs.writeFileSync(stateFile(sid), JSON.stringify(st), { mode: 0o600 });
     ensureDaemon();
   } else if (ev === 'UserPromptSubmit') {
     updateState(sid, { state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting' });
@@ -133,7 +134,7 @@ const [cmd] = process.argv.slice(2);
 if (cmd === 'hook') {
   let raw = '';
   process.stdin.setEncoding('utf8').on('data', (c) => (raw += c)).on('end', () => {
-    try { hook(JSON.parse(raw)); } catch (e) { try { fs.mkdirSync(STATE_DIR, { recursive: true }); fs.appendFileSync(path.join(STATE_DIR, 'error.log'), `${new Date().toISOString()} ${e.stack}\n`); } catch {} }
+    try { hook(JSON.parse(raw)); } catch (e) { try { fs.mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 }); fs.appendFileSync(path.join(STATE_DIR, 'error.log'), `${new Date().toISOString()} ${e.stack}\n`, { mode: 0o600 }); } catch {} }
     process.exit(0); // never break Claude Code
   });
 } else if (cmd === 'setup') setup();

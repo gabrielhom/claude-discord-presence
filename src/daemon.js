@@ -18,8 +18,8 @@ function sessions() {
     if (!f.endsWith('.json')) continue;
     const p = path.join(stateDir, f);
     let st = null;
-    try { st = JSON.parse(fs.readFileSync(p, 'utf8')); } catch {}
-    if (!st || Date.now() - (st.updated || 0) > ORPHAN_MS) { try { fs.unlinkSync(p); } catch {} continue; }
+    try { st = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { continue; } // half-written by a hook right now; retry next tick
+    if (Date.now() - (st.updated || 0) > ORPHAN_MS) { try { fs.unlinkSync(p); } catch {} continue; }
     out.push(st);
   }
   return out;
