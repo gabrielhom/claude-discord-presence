@@ -2,7 +2,9 @@ name: test
 on:
   push:
     branches: [main]
+    paths: [bin/**, src/**, test/**, package.json, .github/workflows/test.yml]
   pull_request:
+    paths: [bin/**, src/**, test/**, package.json, .github/workflows/test.yml]
 jobs:
   test:
     strategy:
