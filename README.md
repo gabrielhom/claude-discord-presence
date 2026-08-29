@@ -1,5 +1,7 @@
 # claude-discord-presence
 
+[![test](https://github.com/gabrielhom/claude-discord-presence/actions/workflows/test.yml/badge.svg)](https://github.com/gabrielhom/claude-discord-presence/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/claude-discord-presence)](https://www.npmjs.com/package/claude-discord-presence)
+
 Discord Rich Presence for the [Claude Code](https://claude.com/claude-code) CLI. Shows what you're working on, live.
 
 ```
