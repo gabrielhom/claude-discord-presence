@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-discord-presence",
+  "description": "Discord Rich Presence for Claude Code.",
+  "owner": { "name": "Gabriel Mello", "url": "https://github.com/gabrielhom" },
+  "plugins": [
+    { "name": "claude-discord-presence", "description": "Show what you're doing in Claude Code on your Discord profile.", "source": "./", "category": "productivity" }
+  ]
+}

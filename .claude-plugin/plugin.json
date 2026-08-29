@@ -1,0 +1,7 @@
+{
+  "name": "claude-discord-presence",
+  "version": "0.2.0",
+  "description": "Discord Rich Presence for Claude Code. Live status, multi-session aware, WSL2 support, zero deps.",
+  "author": { "name": "Gabriel Mello", "url": "https://github.com/gabrielhom" },
+  "hooks": "./hooks/hooks.json"
+}

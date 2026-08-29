@@ -20,6 +20,8 @@ const readJson = (p, fb) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')
 const cfg = () => ({ showPrompt: true, largeImage: '', ...readJson(CONFIG, {}) }); // no largeImage → Discord shows the app icon
 const clientId = () => process.env.CLAUDE_PRESENCE_CLIENT_ID || cfg().clientId || DEFAULT_CLIENT_ID;
 const stateFile = (sid) => path.join(STATE_DIR, `${sid}.json`);
+const PID_FILE = path.join(STATE_DIR, 'daemon.pid');
+const daemonPid = () => parseInt(readText(PID_FILE), 10) || 0;
 const alive = (pid) => { try { return pid > 0 && process.kill(pid, 0); } catch (e) { return e.code === 'EPERM'; } };
 const sh = (cmd, opts = {}) => execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000, ...opts }).trim();
 
@@ -33,16 +35,17 @@ function windowsNode() {
 }
 const toWin = (p) => sh(`wslpath -w '${p}'`);
 
-function spawnDaemon(sid) {
-  let bin = process.execPath, args = [DAEMON, stateFile(sid), clientId()];
+function ensureDaemon() {
+  if (alive(daemonPid())) return; // ponytail: tiny race if the daemon is exiting right now; next SessionStart heals it
+  let bin = process.execPath, args = [DAEMON, STATE_DIR, clientId()];
   if (isWSL()) {
     const wn = windowsNode();
-    if (!wn) { fs.appendFileSync(path.join(STATE_DIR, 'error.log'), 'WSL detected but node.exe not found on Windows\n'); return null; }
-    bin = wn; args = [toWin(DAEMON), toWin(stateFile(sid)), clientId()];
+    if (!wn) { fs.appendFileSync(path.join(STATE_DIR, 'error.log'), 'WSL detected but node.exe not found on Windows\n'); return; }
+    bin = wn; args = [toWin(DAEMON), toWin(STATE_DIR), clientId()];
   }
   const child = spawn(bin, args, { detached: true, stdio: 'ignore', windowsHide: true });
   child.unref();
-  return child.pid;
+  fs.writeFileSync(PID_FILE, String(child.pid));
 }
 
 // --- hook handling ---
@@ -65,11 +68,10 @@ function hook(input) {
     let project = path.basename(cwd), branch = '';
     try { project = path.basename(sh('git rev-parse --show-toplevel', { cwd })); branch = sh('git rev-parse --abbrev-ref HEAD', { cwd }); } catch {}
     if (cwd === os.homedir()) project = '~';
-    const prev = readJson(stateFile(sid), null);
-    if (prev && alive(prev.daemonPid)) return; // resume/clear/compact re-fire → daemon already running
-    const st = { start: Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: cfg().largeImage };
+    const prev = readJson(stateFile(sid), null); // resume/clear/compact re-fire → keep start time
+    const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: cfg().largeImage };
     fs.writeFileSync(stateFile(sid), JSON.stringify(st));
-    updateState(sid, { daemonPid: spawnDaemon(sid) });
+    ensureDaemon();
   } else if (ev === 'UserPromptSubmit') {
     updateState(sid, { state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting' });
   } else if (ev === 'PreToolUse') {
@@ -81,9 +83,7 @@ function hook(input) {
   } else if (ev === 'Stop') {
     updateState(sid, { state: '💤 Waiting for input' });
   } else if (ev === 'SessionEnd') {
-    const st = readJson(stateFile(sid), null);
-    if (st?.daemonPid) try { process.kill(st.daemonPid); } catch {}
-    try { fs.unlinkSync(stateFile(sid)); } catch {}
+    try { fs.unlinkSync(stateFile(sid)); } catch {} // daemon exits by itself once no sessions remain
   }
 }
 
@@ -112,22 +112,20 @@ function uninstall() {
   }
   if (s.hooks && !Object.keys(s.hooks).length) delete s.hooks;
   fs.writeFileSync(SETTINGS, JSON.stringify(s, null, 2) + '\n');
-  for (const f of fs.existsSync(STATE_DIR) ? fs.readdirSync(STATE_DIR) : []) {
-    const st = readJson(path.join(STATE_DIR, f), null);
-    if (st?.daemonPid) try { process.kill(st.daemonPid); } catch {}
-    fs.unlinkSync(path.join(STATE_DIR, f));
-  }
-  console.log('✔ hooks removed, daemons stopped');
+  try { process.kill(daemonPid()); } catch {}
+  fs.rmSync(STATE_DIR, { recursive: true, force: true });
+  console.log('✔ hooks removed, daemon stopped');
 }
 
 function status() {
   const installed = JSON.stringify(readJson(SETTINGS, {}).hooks || {}).includes(MARK);
-  console.log(`hooks: ${installed ? 'installed' : 'not installed'}   client id: ${clientId()}   wsl: ${isWSL()}`);
+  const plugin = !!process.env.CLAUDE_PLUGIN_ROOT || fs.existsSync(path.join(CLAUDE_DIR, 'plugins', 'cache')) && JSON.stringify(readJson(path.join(CLAUDE_DIR, 'settings.json'), {}).enabledPlugins || {}).includes(MARK);
+  console.log(`hooks: ${installed ? 'settings.json' : plugin ? 'plugin' : 'not installed'}   daemon: ${alive(daemonPid()) ? 'running' : 'stopped'}   client id: ${clientId()}   wsl: ${isWSL()}`);
   const files = fs.existsSync(STATE_DIR) ? fs.readdirSync(STATE_DIR).filter((f) => f.endsWith('.json')) : [];
   if (!files.length) console.log('no active sessions');
   for (const f of files) {
     const st = readJson(path.join(STATE_DIR, f), {});
-    console.log(`${alive(st.daemonPid) ? '●' : '○'} ${f.slice(0, 8)}  ${st.details}  ${st.state}`);
+    console.log(`${f.slice(0, 8)}  ${st.details}  ${st.state}`);
   }
 }
 

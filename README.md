@@ -11,22 +11,29 @@ Playing Vibe Coding
 
 - **Zero dependencies** — talks Discord IPC directly.
 - **Works on WSL2** — Discord runs on Windows behind a named pipe that Linux processes can't see; this detects WSL and runs the tiny daemon with Windows `node.exe` instead. Also works natively on Linux (incl. Flatpak/Snap Discord), macOS and Windows.
+- **Multi-session aware** — one daemon for all your Claude sessions; the card shows the one you touched last plus `· +N sessions`, elapsed time since the first one started.
 - **Live status** from Claude Code hooks: your prompt (`💬`), file being edited (`✏️`), command running (`⚙️`), search (`🔍`), subagents (`🤖`), idle (`💤`).
 - Zero config: ships with a default Discord application ("Vibe Coding" — Discord rejects "Claude" in app names, so bring your own app if you want a different title).
 
 ## Install
 
+**As a Claude Code plugin** (recommended — no settings.json edits, auto-updates):
+
+```
+/plugin marketplace add gabrielhom/claude-discord-presence
+/plugin install claude-discord-presence@claude-discord-presence
+```
+
+**Or via npm:**
+
 ```bash
 npm install -g claude-discord-presence
-claude-discord-presence setup
+claude-discord-presence setup       # writes hooks to ~/.claude/settings.json
+claude-discord-presence status      # daemon + active sessions
+claude-discord-presence uninstall   # removes hooks, stops daemon
 ```
 
-Open a new `claude` session — it's on your profile. Requires Node ≥ 18 and the Discord **desktop** app (on WSL: Node installed on the Windows side too, e.g. `winget install OpenJS.NodeJS`).
-
-```bash
-claude-discord-presence status     # active sessions
-claude-discord-presence uninstall  # removes hooks, stops daemons
-```
+Pick one, not both. Open a new `claude` session — it's on your profile. Requires Node ≥ 18 and the Discord **desktop** app (on WSL: Node installed on the Windows side too, e.g. `winget install OpenJS.NodeJS`).
 
 ## Config (optional)
 
@@ -46,7 +53,7 @@ claude-discord-presence uninstall  # removes hooks, stops daemons
 
 ## How it works
 
-`setup` adds hooks (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `Stop`, `SessionEnd`) to `~/.claude/settings.json`. Each hook writes a small JSON state file in the temp dir; `SessionStart` spawns one detached daemon per session that watches the file and pushes `SET_ACTIVITY` to Discord; `SessionEnd` kills it. On WSL the state file is reached via `\\wsl.localhost\...` by the Windows-side daemon. Daemons also exit on their own if the state file goes stale (8h) — e.g. Claude was killed hard.
+Hooks (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `Stop`, `SessionEnd`) each write a small JSON state file per session in the temp dir. `SessionStart` spawns a single detached daemon (if none is running) that watches the directory, composes one activity from all sessions and pushes `SET_ACTIVITY` to Discord. `SessionEnd` deletes the session's file; the daemon exits once none remain. On WSL the directory is reached via `\\wsl.localhost\...` by the Windows-side daemon. Stale files (8h without update — e.g. Claude was killed hard) are dropped automatically.
 
 ## License
 
