@@ -3,7 +3,7 @@
 Discord Rich Presence for the [Claude Code](https://claude.com/claude-code) CLI. Shows what you're working on, live.
 
 ```
-Playing Claude Code
+Playing Vibe Coding
 📁 my-project (main)
 ✏️ server.ts
 01:23:45 elapsed
@@ -12,7 +12,7 @@ Playing Claude Code
 - **Zero dependencies** — talks Discord IPC directly.
 - **Works on WSL2** — Discord runs on Windows behind a named pipe that Linux processes can't see; this detects WSL and runs the tiny daemon with Windows `node.exe` instead. Also works natively on Linux (incl. Flatpak/Snap Discord), macOS and Windows.
 - **Live status** from Claude Code hooks: your prompt (`💬`), file being edited (`✏️`), command running (`⚙️`), search (`🔍`), subagents (`🤖`), idle (`💤`).
-- Zero config: ships with a shared Discord application so it shows "Claude Code" out of the box.
+- Zero config: ships with a default Discord application ("Vibe Coding" — Discord rejects "Claude" in app names, so bring your own app if you want a different title).
 
 ## Install
 

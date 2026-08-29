@@ -12,9 +12,9 @@ const STATE_DIR = path.join(os.tmpdir(), 'claude-discord-presence');
 const DAEMON = path.join(__dirname, '..', 'src', 'daemon.js');
 const MARK = 'claude-discord-presence'; // identifies our hooks in settings.json
 const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop', 'SessionEnd'];
-// ponytail: shared public app id from backyarddd/claude-presence so it works with zero config.
+// Default Discord application ("Vibe Coding" — Discord blocks "Claude" in app names).
 // Set "clientId" in ~/.claude/claude-discord-presence.json (or CLAUDE_PRESENCE_CLIENT_ID) for your own app name/icon.
-const DEFAULT_CLIENT_ID = '1484378196735426561';
+const DEFAULT_CLIENT_ID = '1543326727135305778';
 
 const readJson = (p, fb) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return fb; } };
 const cfg = () => ({ showPrompt: true, largeImage: 'claude-logo', ...readJson(CONFIG, {}) });
