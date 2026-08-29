@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const { toolLabel } = require('../src/compose');
 
 const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 const SETTINGS = path.join(CLAUDE_DIR, 'settings.json');
@@ -17,7 +18,7 @@ const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop', 'Sessi
 const DEFAULT_CLIENT_ID = '1543326727135305778';
 
 const readJson = (p, fb) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return fb; } };
-const cfg = () => ({ showPrompt: true, largeImage: '', ...readJson(CONFIG, {}) }); // no largeImage → Discord shows the app icon
+const cfg = () => ({ showPrompt: false, showProject: true, largeImage: '', ...readJson(CONFIG, {}) }); // no largeImage → Discord shows the app icon
 const clientId = () => process.env.CLAUDE_PRESENCE_CLIENT_ID || cfg().clientId || DEFAULT_CLIENT_ID;
 const stateFile = (sid) => path.join(STATE_DIR, `${sid}.json`);
 const PID_FILE = path.join(STATE_DIR, 'daemon.pid');
@@ -68,6 +69,7 @@ function hook(input) {
     let project = path.basename(cwd), branch = '';
     try { project = path.basename(sh('git rev-parse --show-toplevel', { cwd })); branch = sh('git rev-parse --abbrev-ref HEAD', { cwd }); } catch {}
     if (cwd === os.homedir()) project = '~';
+    if (!cfg().showProject) { project = 'a project'; branch = ''; }
     const prev = readJson(stateFile(sid), null); // resume/clear/compact re-fire → keep start time
     const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: cfg().largeImage };
     fs.writeFileSync(stateFile(sid), JSON.stringify(st));
@@ -77,9 +79,7 @@ function hook(input) {
   } else if (ev === 'PreToolUse') {
     const icon = TOOL_ICON[input.tool_name] || '🔧';
     const ti = input.tool_input || {};
-    const target = ti.file_path || ti.notebook_path || ti.command || ti.pattern || ti.url || ti.description || '';
-    const label = ti.file_path || ti.notebook_path ? path.basename(target) : String(target).replace(/\s+/g, ' ').slice(0, 60);
-    updateState(sid, { state: `${icon} ${label}`.trim() });
+    updateState(sid, { state: `${icon} ${toolLabel(input.tool_name, ti)}`.trim() });
   } else if (ev === 'Stop') {
     updateState(sid, { state: '💤 Waiting for input' });
   } else if (ev === 'SessionEnd') {

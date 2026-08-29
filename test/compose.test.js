@@ -18,3 +18,15 @@ test('most recently active wins, counts others, earliest start', () => {
   assert.deepStrictEqual(a.assets, { large_image: 'img', large_text: 'Claude Code' });
 });
 test('no sessions → null', () => assert.strictEqual(compose([]), null));
+
+const { toolLabel } = require('../src/compose');
+
+test('toolLabel never leaks commands, patterns or full URLs', () => {
+  assert.equal(toolLabel('Edit', { file_path: '/home/me/secret-project/src/server.ts' }), 'server.ts');
+  assert.equal(toolLabel('Bash', { command: 'curl -H "Authorization: Bearer sk-123"', description: 'Fetch   API status' }), 'Fetch API status');
+  assert.equal(toolLabel('Bash', { command: 'export AWS_SECRET=abc' }), '');
+  assert.equal(toolLabel('Grep', { pattern: 'password' }), '');
+  assert.equal(toolLabel('WebFetch', { url: 'https://api.example.com/v1/users?token=abc' }), 'api.example.com');
+  assert.equal(toolLabel('WebFetch', { url: 'not a url' }), '');
+  assert.equal(toolLabel('Agent', { prompt: 'look at db creds', description: 'Explore repo' }), 'Explore repo');
+});
