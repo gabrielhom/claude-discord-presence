@@ -2,6 +2,11 @@
 
 All notable changes to this project. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.1] - 2026-08-30
+
+### Fixed
+- Token count on the waiting line no longer includes cache tokens, which re-counted the whole context every turn and inflated the number; it now sums only real input + output tokens. (#4)
+
 ## [0.4.0] - 2026-08-30
 
 ### Added

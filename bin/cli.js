@@ -74,7 +74,7 @@ function transcriptStats(tp) {
       let u; try { u = JSON.parse(line).message; } catch { continue; }
       if (!u || !u.usage) continue;
       if (u.model) model = u.model;
-      tok += (u.usage.input_tokens || 0) + (u.usage.output_tokens || 0) + (u.usage.cache_creation_input_tokens || 0) + (u.usage.cache_read_input_tokens || 0);
+      tok += (u.usage.input_tokens || 0) + (u.usage.output_tokens || 0);
     }
   } catch {}
   return { model, tok };
