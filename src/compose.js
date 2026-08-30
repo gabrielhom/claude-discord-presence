@@ -22,4 +22,13 @@ function toolLabel(tool, ti) {
   if (tool === 'Bash' || tool === 'Agent' || tool === 'Task') return String(ti.description || '').replace(/\s+/g, ' ').slice(0, 60);
   return '';
 }
-module.exports = { compose, toolLabel };
+// "claude-opus-4-1-20250805" → "Opus 4.1"
+function prettyModel(id) {
+  const parts = String(id).replace(/^claude-/, '').replace(/-\d{8}$/, '').split('-');
+  const name = parts.filter((p) => isNaN(p)).map((p) => p[0].toUpperCase() + p.slice(1)).join(' ');
+  return `${name} ${parts.filter((p) => !isNaN(p)).join('.')}`.trim();
+}
+
+const fmtTok = (t) => (t >= 1e6 ? `${(t / 1e6).toFixed(1)}M` : t >= 1000 ? `${Math.round(t / 1000)}k` : String(t));
+
+module.exports = { compose, toolLabel, prettyModel, fmtTok };

@@ -2,6 +2,12 @@
 
 All notable changes to this project. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.0] - 2026-08-30
+
+### Added
+- Animated status GIFs on the card: typing while prompting, building while running tools, notification while waiting for input. Served from this repo; `largeImage` in the config still overrides them.
+- Session stats on the waiting line: model, prompt count and total tokens (e.g. `💤 Opus 4.7 · 12 prompts · 1.2M tok`), parsed from the session transcript locally.
+
 ## [0.3.1] - 2026-08-29
 
 ### Fixed
@@ -39,6 +45,7 @@ All notable changes to this project. Format follows [Keep a Changelog](https://k
 - Initial release: Discord Rich Presence for Claude Code via hooks, zero dependencies, WSL2-aware (daemon runs on Windows `node.exe`), Linux (incl. Flatpak/Snap), macOS and Windows.
 - Default Discord application ("Vibe Coding"); bring your own via `clientId`.
 
+[0.4.0]: https://github.com/gabrielhom/claude-discord-presence/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/gabrielhom/claude-discord-presence/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gabrielhom/claude-discord-presence/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/gabrielhom/claude-discord-presence/compare/v0.1.2...v0.2.1

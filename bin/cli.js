@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
-const { toolLabel } = require('../src/compose');
+const { toolLabel, prettyModel, fmtTok } = require('../src/compose');
 
 const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 const SETTINGS = path.join(CLAUDE_DIR, 'settings.json');
@@ -51,12 +51,33 @@ function ensureDaemon() {
 
 // --- hook handling ---
 const TOOL_ICON = { Edit: '✏️', Write: '✏️', MultiEdit: '✏️', NotebookEdit: '✏️', Read: '👀', Bash: '⚙️', Grep: '🔍', Glob: '🔍', WebFetch: '🌐', WebSearch: '🌐', Agent: '🤖', Task: '🤖' };
+// Animated large image per status — Discord accepts external https URLs in large_image and animates GIFs.
+const GIF = (n) => `https://raw.githubusercontent.com/gabrielhom/claude-discord-presence/main/assets/clawd-${n}.gif`;
+const STATUS_GIF = { prompt: GIF('working-typing'), tool: GIF('working-building'), wait: GIF('notification') };
+const img = (status) => cfg().largeImage || STATUS_GIF[status]; // config largeImage overrides everything
 
 function updateState(sid, patch) {
   const f = stateFile(sid);
   const st = readJson(f, null);
   if (!st) return;
+  if (typeof patch === 'function') patch = patch(st);
   fs.writeFileSync(f, JSON.stringify({ ...st, ...patch, updated: Date.now() }), { mode: 0o600 });
+}
+
+// Model + total tokens from the session transcript (JSONL, one usage block per assistant message).
+// ponytail: full re-read on every Stop; fine for a few MB once per response — stream it if transcripts ever hurt
+function transcriptStats(tp) {
+  let model = '', tok = 0;
+  try {
+    for (const line of fs.readFileSync(tp, 'utf8').split('\n')) {
+      if (!line.includes('"usage"')) continue;
+      let u; try { u = JSON.parse(line).message; } catch { continue; }
+      if (!u || !u.usage) continue;
+      if (u.model) model = u.model;
+      tok += (u.usage.input_tokens || 0) + (u.usage.output_tokens || 0) + (u.usage.cache_creation_input_tokens || 0) + (u.usage.cache_read_input_tokens || 0);
+    }
+  } catch {}
+  return { model, tok };
 }
 
 function hook(input) {
@@ -72,17 +93,21 @@ function hook(input) {
     if (cwd === os.homedir()) project = '~';
     if (!cfg().showProject) { project = 'a project'; branch = ''; }
     const prev = readJson(stateFile(sid), null); // resume/clear/compact re-fire → keep start time
-    const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: cfg().largeImage };
+    const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: img('prompt') };
     fs.writeFileSync(stateFile(sid), JSON.stringify(st), { mode: 0o600 });
     ensureDaemon();
   } else if (ev === 'UserPromptSubmit') {
-    updateState(sid, { state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting' });
+    updateState(sid, (st) => ({ state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting', largeImage: img('prompt'), prompts: (st.prompts || 0) + 1 }));
   } else if (ev === 'PreToolUse') {
     const icon = TOOL_ICON[input.tool_name] || '🔧';
     const ti = input.tool_input || {};
-    updateState(sid, { state: `${icon} ${toolLabel(input.tool_name, ti)}`.trim() });
+    updateState(sid, { state: `${icon} ${toolLabel(input.tool_name, ti)}`.trim(), largeImage: img('tool') });
   } else if (ev === 'Stop') {
-    updateState(sid, { state: '💤 Waiting for input' });
+    updateState(sid, (st) => {
+      const { model, tok } = transcriptStats(input.transcript_path);
+      const bits = [model && prettyModel(model), st.prompts && `${st.prompts} prompt${st.prompts > 1 ? 's' : ''}`, tok && `${fmtTok(tok)} tok`].filter(Boolean);
+      return { state: `💤 ${bits.join(' · ') || 'Waiting for input'}`, largeImage: img('wait') };
+    });
   } else if (ev === 'SessionEnd') {
     try { fs.unlinkSync(stateFile(sid)); } catch {} // daemon exits by itself once no sessions remain
   }

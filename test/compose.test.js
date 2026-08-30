@@ -30,3 +30,16 @@ test('toolLabel never leaks commands, patterns or full URLs', () => {
   assert.equal(toolLabel('WebFetch', { url: 'not a url' }), '');
   assert.equal(toolLabel('Agent', { prompt: 'look at db creds', description: 'Explore repo' }), 'Explore repo');
 });
+
+const { prettyModel, fmtTok } = require('../src/compose');
+
+test('prettyModel', () => {
+  assert.equal(prettyModel('claude-opus-4-1-20250805'), 'Opus 4.1');
+  assert.equal(prettyModel('claude-fable-5'), 'Fable 5');
+  assert.equal(prettyModel('claude-3-5-sonnet-20241022'), 'Sonnet 3.5');
+});
+test('fmtTok', () => {
+  assert.equal(fmtTok(950), '950');
+  assert.equal(fmtTok(45200), '45k');
+  assert.equal(fmtTok(1234567), '1.2M');
+});
