@@ -2,6 +2,11 @@
 
 All notable changes to this project. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.2] - 2026-08-30
+
+### Fixed
+- State files are now written atomically (temp file + rename). Parallel hooks could race on the same file and leave it corrupted, which made the daemon exit as if no sessions remained and silently dropped every later update for that session until the next `SessionStart`. (#5)
+
 ## [0.4.1] - 2026-08-30
 
 ### Fixed

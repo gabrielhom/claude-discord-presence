@@ -18,6 +18,8 @@ const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop', 'Sessi
 const DEFAULT_CLIENT_ID = '1543326727135305778';
 
 const readJson = (p, fb) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return fb; } };
+// Parallel hooks race on the same state file; writeFileSync isn't atomic across processes (#5). Rename is.
+const writeAtomic = (f, data) => { const t = `${f}.${process.pid}.tmp`; fs.writeFileSync(t, data, { mode: 0o600 }); fs.renameSync(t, f); };
 const cfg = () => ({ showPrompt: false, showProject: true, largeImage: '', ...readJson(CONFIG, {}) }); // no largeImage → Discord shows the app icon
 const clientId = () => process.env.CLAUDE_PRESENCE_CLIENT_ID || cfg().clientId || DEFAULT_CLIENT_ID;
 const stateFile = (sid) => path.join(STATE_DIR, `${sid}.json`);
@@ -61,7 +63,7 @@ function updateState(sid, patch) {
   const st = readJson(f, null);
   if (!st) return;
   if (typeof patch === 'function') patch = patch(st);
-  fs.writeFileSync(f, JSON.stringify({ ...st, ...patch, updated: Date.now() }), { mode: 0o600 });
+  writeAtomic(f, JSON.stringify({ ...st, ...patch, updated: Date.now() }));
 }
 
 // Model + total tokens from the session transcript (JSONL, one usage block per assistant message).
@@ -94,7 +96,7 @@ function hook(input) {
     if (!cfg().showProject) { project = 'a project'; branch = ''; }
     const prev = readJson(stateFile(sid), null); // resume/clear/compact re-fire → keep start time
     const st = { ...prev, start: prev?.start || Date.now(), updated: Date.now(), details: `📁 ${project}${branch ? ` (${branch})` : ''}`, state: '🚀 Starting session', largeImage: img('prompt') };
-    fs.writeFileSync(stateFile(sid), JSON.stringify(st), { mode: 0o600 });
+    writeAtomic(stateFile(sid), JSON.stringify(st));
     ensureDaemon();
   } else if (ev === 'UserPromptSubmit') {
     updateState(sid, (st) => ({ state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting', largeImage: img('prompt'), prompts: (st.prompts || 0) + 1 }));
