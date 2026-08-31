@@ -10,6 +10,7 @@ Discord Rich Presence for the [Claude Code](https://claude.com/claude-code) CLI.
 - **Works on WSL2** — Discord runs on Windows behind a named pipe that Linux processes can't see; this detects WSL and runs the tiny daemon with Windows `node.exe` instead. Also works natively on Linux (incl. Flatpak/Snap Discord), macOS and Windows.
 - **Multi-session aware** — one daemon for all your Claude sessions; the card shows the one you touched last plus `· +N sessions`, elapsed time since the first one started.
 - **Live status** from Claude Code hooks: prompting (`💬`), file being edited (`✏️`), command running (`⚙️`), search (`🔍`), subagents (`🤖`), idle (`💤`).
+- **Animated Clawd** on the card: typing while you prompt, building while tools run, a notification bell when Claude is waiting on you — and after 5 minutes idle, Clawd goes to sleep.
 - **Privacy-safe by default** — never shows your prompt text, shell commands, search patterns or full URLs. See [Privacy](#privacy).
 - Zero config: ships with a default Discord application ("Vibe Coding" — Discord rejects "Claude" in app names, so bring your own app if you want a different title).
 
@@ -49,7 +50,7 @@ Pick one, not both. Open a new `claude` session — it's on your profile. Requir
 - `clientId` — use your own app from the [Developer Portal](https://discord.com/developers/applications) to control the name/icon. Env `CLAUDE_PRESENCE_CLIENT_ID` also works.
 - `showPrompt` — set `true` to show the first 110 chars of your prompt instead of `💬 Prompting` (default `false`).
 - `showProject` — set `false` to show `📁 a project` instead of the repo name and branch (default `true`).
-- `largeImage` — key of an image uploaded under your app's *Rich Presence → Art Assets*. Default: none (Discord shows the app icon).
+- `largeImage` — override the animated status GIFs with a single fixed image: an https URL, or the key of an image uploaded under your app's *Rich Presence → Art Assets*.
 
 ## Privacy
 

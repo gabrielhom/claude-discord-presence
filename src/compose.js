@@ -1,7 +1,9 @@
 const path = require('node:path');
 
+const IDLE_MS = 5 * 60e3; // waiting this long → swap the card to the session's idle image (sleeping Clawd)
+
 // Pure: turn all live session states into one Discord activity (most recently active session wins).
-function compose(states) {
+function compose(states, now = Date.now()) {
   const live = states.filter((s) => s && s.details);
   if (!live.length) return null;
   const cur = live.reduce((a, b) => (b.updated > a.updated ? b : a));
@@ -11,7 +13,8 @@ function compose(states) {
     state: cur.state,
     timestamps: { start: Math.min(...live.map((s) => s.start)) },
   };
-  if (cur.largeImage) activity.assets = { large_image: cur.largeImage, large_text: 'Claude Code' };
+  const image = cur.idleImage && now - cur.updated > IDLE_MS ? cur.idleImage : cur.largeImage;
+  if (image) activity.assets = { large_image: image, large_text: 'Claude Code' };
   return activity;
 }
 

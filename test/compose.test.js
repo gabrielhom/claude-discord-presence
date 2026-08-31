@@ -19,6 +19,14 @@ test('most recently active wins, counts others, earliest start', () => {
 });
 test('no sessions → null', () => assert.strictEqual(compose([]), null));
 
+test('idle: swaps to idleImage only after IDLE_MS of no updates', () => {
+  const s = { details: '📁 a', state: '💤 Waiting', start: 0, updated: 1000, largeImage: 'bell', idleImage: 'sleep' };
+  assert.strictEqual(compose([s], 1000 + 60e3).assets.large_image, 'bell');
+  assert.strictEqual(compose([s], 1000 + 6 * 60e3).assets.large_image, 'sleep');
+  const working = { ...s, state: '⚙️ build', idleImage: null };
+  assert.strictEqual(compose([working], 1000 + 6 * 60e3).assets.large_image, 'bell'); // no idleImage → never swaps
+});
+
 const { toolLabel } = require('../src/compose');
 
 test('toolLabel never leaks commands, patterns or full URLs', () => {

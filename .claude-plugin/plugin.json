@@ -1,6 +1,6 @@
 {
   "name": "claude-discord-presence",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Discord Rich Presence for Claude Code. Live status, multi-session aware, WSL2 support, zero deps.",
   "author": {
     "name": "Gabriel Mello",

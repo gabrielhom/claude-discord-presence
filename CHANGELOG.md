@@ -2,6 +2,11 @@
 
 All notable changes to this project. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.0] - 2026-08-30
+
+### Added
+- Sleeping Clawd: after 5 minutes idle the card swaps from the notification bell to `clawd-sleeping.gif`. The daemon does the swap (hooks can't fire on a timer), so it works with no extra hook events; a `largeImage` config override still wins.
+
 ## [0.4.2] - 2026-08-30
 
 ### Fixed

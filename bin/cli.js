@@ -55,7 +55,7 @@ function ensureDaemon() {
 const TOOL_ICON = { Edit: '✏️', Write: '✏️', MultiEdit: '✏️', NotebookEdit: '✏️', Read: '👀', Bash: '⚙️', Grep: '🔍', Glob: '🔍', WebFetch: '🌐', WebSearch: '🌐', Agent: '🤖', Task: '🤖' };
 // Animated large image per status — Discord accepts external https URLs in large_image and animates GIFs.
 const GIF = (n) => `https://raw.githubusercontent.com/gabrielhom/claude-discord-presence/main/assets/clawd-${n}.gif`;
-const STATUS_GIF = { prompt: GIF('working-typing'), tool: GIF('working-building'), wait: GIF('notification') };
+const STATUS_GIF = { prompt: GIF('working-typing'), tool: GIF('working-building'), wait: GIF('notification'), idle: GIF('sleeping') };
 const img = (status) => cfg().largeImage || STATUS_GIF[status]; // config largeImage overrides everything
 
 function updateState(sid, patch) {
@@ -99,16 +99,16 @@ function hook(input) {
     writeAtomic(stateFile(sid), JSON.stringify(st));
     ensureDaemon();
   } else if (ev === 'UserPromptSubmit') {
-    updateState(sid, (st) => ({ state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting', largeImage: img('prompt'), prompts: (st.prompts || 0) + 1 }));
+    updateState(sid, (st) => ({ state: cfg().showPrompt ? `💬 ${String(input.prompt || '').replace(/\s+/g, ' ').slice(0, 110)}` : '💬 Prompting', largeImage: img('prompt'), idleImage: null, prompts: (st.prompts || 0) + 1 }));
   } else if (ev === 'PreToolUse') {
     const icon = TOOL_ICON[input.tool_name] || '🔧';
     const ti = input.tool_input || {};
-    updateState(sid, { state: `${icon} ${toolLabel(input.tool_name, ti)}`.trim(), largeImage: img('tool') });
+    updateState(sid, { state: `${icon} ${toolLabel(input.tool_name, ti)}`.trim(), largeImage: img('tool'), idleImage: null });
   } else if (ev === 'Stop') {
     updateState(sid, (st) => {
       const { model, tok } = transcriptStats(input.transcript_path);
       const bits = [model && prettyModel(model), st.prompts && `${st.prompts} prompt${st.prompts > 1 ? 's' : ''}`, tok && `${fmtTok(tok)} tok`].filter(Boolean);
-      return { state: `💤 ${bits.join(' · ') || 'Waiting for input'}`, largeImage: img('wait') };
+      return { state: `💤 ${bits.join(' · ') || 'Waiting for input'}`, largeImage: img('wait'), idleImage: img('idle') }; // daemon swaps to idleImage after IDLE_MS
     });
   } else if (ev === 'SessionEnd') {
     try { fs.unlinkSync(stateFile(sid)); } catch {} // daemon exits by itself once no sessions remain
